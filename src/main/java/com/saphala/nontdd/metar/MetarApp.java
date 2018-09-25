@@ -1,6 +1,7 @@
 package com.saphala.nontdd.metar;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -17,7 +18,7 @@ public class MetarApp {
    private int cloudsEndIndex = 0;
    private int windsStartIndex = 0;
    private int visibilityEndIndex = 0;
-   private int windsEndIndex;
+   private int windsEndIndex = 0;
 
    public MetarApp() {
       this.apiKey = System.getenv("CHECKWX-API-KEY");
@@ -46,13 +47,13 @@ public class MetarApp {
    public Map<String, Object> retrieveMetarFor(String station) throws Exception {
       try {
          // Retrieve the METAR from CheckWX
-         HttpResponse<MetarResult> metarResponse = Unirest.get("https://api.checkwx.com/metar/{station}/")
+         HttpResponse<HashMap> metarResponse = Unirest.get("https://api.checkwx.com/metar/{station}/")
                .header("accept", "application/json").header("X-API-Key", this.apiKey).routeParam("station", station)
-               .asObject(MetarResult.class);
+               .asObject(HashMap.class);
 
-         MetarResult result = metarResponse.getBody();
+         HashMap<String, ArrayList<String>> result = metarResponse.getBody();
 
-         String rawMetar = result.getData().get(0);
+         String rawMetar = result.get("data").get(0);
          
          System.out.println(rawMetar);
 
@@ -70,10 +71,6 @@ public class MetarApp {
 
          Map<String, Object> metarMap = new HashMap<String, Object>();
 
-         if (metar.length == 0) {
-            return metarMap;
-         }
-         
          List<String> metarList = Arrays.asList(metar);
 
          metarMap.put("station", metarList.get(0));
@@ -199,11 +196,8 @@ public class MetarApp {
          String tempAndDewpoint = metarList.get(this.cloudsEndIndex);
          
          metarMap.put("temperature", tempAndDewpoint.split("/")[0]);
-         
-         metarMap.put("dewPoint", tempAndDewpoint.split("/")[1]);
-         
-         metarMap.put("altimeter", metarList.get(cloudsEndIndex + 1));
-         
+         metarMap.put("dewpoint", tempAndDewpoint.split("/")[1]);
+         metarMap.put("altimeter", metarList.get(cloudsEndIndex + 1));  
          metarMap.put("remarks", metarList.subList(cloudsEndIndex + 2, metarList.size()).toString());
 
          return metarMap;
@@ -230,7 +224,7 @@ public class MetarApp {
 
       try {
 
-         Map<String, Object> metar = app.retrieveMetarFor("CYOW");
+         Map<String, Object> metar = app.retrieveMetarFor("CYYZ");
 
          System.out.println("Station: " + metar.get("station"));
          System.out.println("Report Time: " + metar.get("reportTime"));
